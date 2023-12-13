@@ -14,7 +14,7 @@ from app.api.auth.token_util import TokenUtil, JwtTokenType
 from app.common.passwd_util import verify_password
 
 from app.api.auth.exception import TokenInvalidateErr
-from app.api.exception import api_error
+from app.api.exception import api_error, crud_error
 
 from app.configs.log import logger
 from app.configs.config import settings
@@ -34,7 +34,7 @@ def authenticate(user_id: str, user_pw: str, db: Session) -> None:
         get_user = user.crud.UserCRUD(db).get(
             user.schema.UserGet(user_id=user_id)
         )
-    except user.exception.DatabaseGetErr:
+    except crud_error.DatabaseGetErr:
         logger.error(f"[auth-service] UserCRUD get error")
         raise api_error.ServerError(f"[auth-service] UserCRUD error")
 
@@ -68,7 +68,7 @@ def create_token(db: Session, redis: Redis, user_id: str, host_id: int = 0) -> T
             result = commanage.crud.CommanageCRUD(db).get(
                 commanage.schema.ComManageByHost(host_id=host_id)
             )
-        except commanage.exception.DatabaseGetErr:
+        except crud_error.DatabaseGetErr:
             logger.error(f"[auth-service] CommanageCRUD get error")
             raise api_error.ServerError(f"[auth-service] CommanageCRUD error")
 
@@ -170,7 +170,7 @@ def verify_token(db: Session = Depends(get_db),
         get_user = user.crud.UserCRUD(db).get(
             user.schema.UserGet(user_id=token_util.user_id)
         )
-    except user.exception.DatabaseGetErr:
+    except crud_error.DatabaseGetErr:
         logger.error(f"[auth-service] UserCRUD get error")
         raise api_error.ServerError(f"[auth-service] UserCRUD error")
 

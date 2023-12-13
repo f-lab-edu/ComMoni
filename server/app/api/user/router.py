@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-
+from app.api.auth.service import verify_token
 from app.api.user.schema import UserCreate, UserGet, UserResponse, UserStatus
 from app.api.user.service import UserService
 
@@ -17,7 +17,8 @@ user_router = APIRouter(prefix=f"/{API_VERSION}/{API_NAME}")
 def create_user(
         *,
         db: Session = Depends(get_db),
-        user: UserCreate
+        user: UserCreate,
+        _: str = Depends(verify_token)
 ) -> UserResponse:
     """
     유저 생성
@@ -32,7 +33,8 @@ def create_user(
 def get_user(
         *,
         db: Session = Depends(get_db),
-        user_id: str
+        user_id: str,
+        _: str = Depends(verify_token)
 ) -> UserResponse:
     """
     User ID 값으로 User 값 가져오기
@@ -48,7 +50,8 @@ def get_user(
 def get_user_status(
         *,
         db: Session = Depends(get_db),
-        user_id: str
+        user_id: str,
+        _: str = Depends(verify_token)
 ) -> UserStatus:
     """
     User 상태 정보 확인
@@ -63,7 +66,8 @@ def get_user_status(
 def update_user(
         *,
         db: Session = Depends(get_db),
-        user: UserGet
+        user: UserGet,
+        _: str = Depends(verify_token)
 ):
     """
     User 객체 정보 수정
@@ -79,7 +83,8 @@ def update_user(
 def delete_user(
         *,
         db: Session = Depends(get_db),
-        user_id: str
+        user_id: str,
+        _: str = Depends(verify_token)
 ):
     """
     User를 삭제

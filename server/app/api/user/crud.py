@@ -6,7 +6,7 @@ from app.api.user.schema import UserGet, UserCreate
 
 from app.common import dictionary_util
 
-from app.api.user import exception
+from app.api.exception import crud_error
 
 from app.configs.log import logger
 
@@ -37,7 +37,7 @@ class UserCRUD:
         except SQLAlchemyError as err:
             logger.error(f"[User]DB Err : {err}")
             self.session.rollback()
-            raise exception.DatabaseCreateErr()
+            raise crud_error.DatabaseCreateErr()
 
         return insert_data
 
@@ -54,7 +54,7 @@ class UserCRUD:
                 .first()
         except SQLAlchemyError as err:
             logger.error(f"[User]DB Err : {err}")
-            raise exception.DatabaseGetErr()
+            raise crud_error.DatabaseGetErr()
 
     def update(self, update_data: UserGet) -> None:
         """
@@ -73,7 +73,7 @@ class UserCRUD:
         except SQLAlchemyError as err:
             logger.error(f"[User]DB Error : {err}")
             self.session.rollback()
-            raise exception.DatabaseUpdateErr()
+            raise crud_error.DatabaseUpdateErr()
 
         if updated == 0:
             logger.error(f"[User]Update is None. user_id : {update_data.user_id}")
@@ -92,7 +92,7 @@ class UserCRUD:
         except SQLAlchemyError as err:
             logger.error(f"[User]DB Err : {err}")
             self.session.rollback()
-            raise exception.DatabaseDeleteErr()
+            raise crud_error.DatabaseDeleteErr()
 
         if deleted == 0:
             logger.error(f"[User]Delete is None. user_id : {user.user_id}")

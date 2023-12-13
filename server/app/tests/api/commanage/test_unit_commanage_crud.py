@@ -8,7 +8,7 @@ from app.api.commanage import model as model
 from app.api.commanage.schema import ComManageByUser, ComManageByHost
 from app.api.commanage.crud import CommanageCRUD
 
-from app.api.commanage import exception
+from app.api.exception import crud_error
 
 
 class TestCommanageCRUD:
@@ -46,7 +46,7 @@ class TestCommanageCRUD:
         session.commit.side_effect = SQLAlchemyError()
 
         create_commanage_data = ComManageByUser(user_id=self.user_id)
-        with pytest.raises(exception.DatabaseCreateErr):
+        with pytest.raises(crud_error.DatabaseCreateErr):
             CommanageCRUD(session).create(create_commanage_data)
 
     def test_update_success(self):
@@ -63,7 +63,7 @@ class TestCommanageCRUD:
         session.commit.side_effect = SQLAlchemyError()
 
         update_data = ComManageByHost(host_id=self.host_id)
-        with pytest.raises(exception.DatabaseUpdateErr):
+        with pytest.raises(crud_error.DatabaseUpdateErr):
             CommanageCRUD(session).update(update_data=update_data)
 
     def test_delete_success(self):
@@ -80,7 +80,7 @@ class TestCommanageCRUD:
         session.commit.side_effect = SQLAlchemyError()
 
         delete_data = ComManageByHost(host_id=self.host_id)
-        with pytest.raises(exception.DatabaseDeleteErr):
+        with pytest.raises(crud_error.DatabaseDeleteErr):
             CommanageCRUD(session).delete(delete_data=delete_data)
 
     def test_delete_all_succes(self):
@@ -97,7 +97,7 @@ class TestCommanageCRUD:
         session.commit.side_effect = SQLAlchemyError()
 
         delete_data = ComManageByUser(user_id=self.user_id)
-        with pytest.raises(exception.DatabaseDeleteErr):
+        with pytest.raises(crud_error.DatabaseDeleteErr):
             CommanageCRUD(session).delete_all(commanage=delete_data)
 
     def test_get_success(self):
@@ -134,7 +134,7 @@ class TestCommanageCRUD:
 
         request_commange_data = ComManageByHost(host_id=self.host_id)
 
-        with pytest.raises(exception.DatabaseGetErr):
+        with pytest.raises(crud_error.DatabaseGetErr):
             CommanageCRUD(session).get(commanage=request_commange_data)
 
     def test_get_all_success(self):
@@ -177,5 +177,5 @@ class TestCommanageCRUD:
 
         request_commange_data = ComManageByUser(user_id=self.user_id)
 
-        with pytest.raises(exception.DatabaseGetErr):
+        with pytest.raises(crud_error.DatabaseGetErr):
             CommanageCRUD(session).get_all(commanage=request_commange_data)

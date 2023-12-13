@@ -2,6 +2,8 @@ import asyncio
 from asyncio.events import AbstractEventLoop
 from signal import SIGINT, SIGTERM
 
+from app.configs.log import logger
+
 
 def handler(sig):
     """
@@ -9,10 +11,13 @@ def handler(sig):
     :param sig: 프로세스에서 받은 시그널
     :return: None
     """
+    logger.info(f"[sig handelr] recv signal : {sig}")
     loop = asyncio.get_running_loop()
 
     for task in asyncio.all_tasks(loop=loop):
         task.cancel()
+
+    logger.info(f"[sig handelr] all tasks canceled")
 
     loop.remove_signal_handler(SIGTERM)
     loop.add_signal_handler(SIGINT, lambda: None)

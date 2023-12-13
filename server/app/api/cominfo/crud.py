@@ -7,7 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.api.cominfo.schema import ComInfoCreate, ComInfoGet, ComInfoRTGet, ComInfoRTUpdate
 from app.api.cominfo.model import ComInfo, ComInfoRT
 
-from app.api.cominfo import exception
+from app.api.exception import crud_error
 
 from app.configs.log import logger
 
@@ -37,7 +37,7 @@ class CominfoCRUD:
         except SQLAlchemyError as err:
             logger.error(f"[ComInfo]DB Error : {err}")
             self.session.rollback()
-            raise exception.DatabaseCreateErr()
+            raise crud_error.DatabaseCreateErr()
 
         return insert_data
 
@@ -63,7 +63,7 @@ class CominfoCRUD:
             return query.all()
         except SQLAlchemyError as err:
             logger.error(f"[ComInfo]DB Error : {err}")
-            raise exception.DatabaseGetErr()
+            raise crud_error.DatabaseGetErr()
 
     def get_multiline(self, cominfo: ComInfoGet, skip: int = 0, limit: int = 1000) -> List[ComInfo]:
         """
@@ -82,7 +82,7 @@ class CominfoCRUD:
                 .all()
         except SQLAlchemyError as err:
             logger.error(f"[ComInfo]DB Error : {err}")
-            raise exception.DatabaseGetErr()
+            raise crud_error.DatabaseGetErr()
 
 
 class CominfoRtCRUD:
@@ -106,7 +106,7 @@ class CominfoRtCRUD:
         except SQLAlchemyError as err:
             logger.error(f"[ComInfoRT]DB Error : {err}")
             self.session.rollback()
-            raise exception.DatabaseCreateErr()
+            raise crud_error.DatabaseCreateErr()
 
         return insert_data
 
@@ -123,7 +123,7 @@ class CominfoRtCRUD:
                 .first()
         except SQLAlchemyError as err:
             logger.error(f"[ComInfoRT]DB Error : {err}")
-            raise exception.DatabaseGetErr()
+            raise crud_error.DatabaseGetErr()
 
     def update(self, update_data: ComInfoRTUpdate) -> None:
         """
@@ -140,7 +140,7 @@ class CominfoRtCRUD:
         except SQLAlchemyError as err:
             logger.error(f"[ComInfoRT]DB Error : {err}")
             self.session.rollback()
-            raise exception.DatabaseUpdateErr()
+            raise crud_error.DatabaseUpdateErr()
 
         if updated == 0:
             logger.error("[ComInfoRT]Delete is none")

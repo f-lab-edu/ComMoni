@@ -9,7 +9,7 @@ from app.api.cominfo.model import ComInfo, ComInfoRT
 from app.api.cominfo.schema import ComInfoGet, ComInfoCreate, ComInfoRTGet, ComInfoRTUpdate
 from app.api.cominfo.crud import CominfoCRUD, CominfoRtCRUD
 
-from app.api.cominfo import exception
+from app.api.exception import crud_error
 
 
 class TestCominfoCRUD:
@@ -51,7 +51,7 @@ class TestCominfoCRUD:
             make_datetime=self.make_datetime
         )
 
-        with pytest.raises(exception.DatabaseCreateErr):
+        with pytest.raises(crud_error.DatabaseCreateErr):
             CominfoCRUD(session).create(create_cominfo_data)
 
     def test_get_by_datetime_success_1(self):
@@ -325,7 +325,7 @@ class TestCominfoCRUD:
 
         request_cominfo_get = ComInfoGet(host_id=self.host_id)
 
-        with pytest.raises(exception.DatabaseGetErr):
+        with pytest.raises(crud_error.DatabaseGetErr):
             CominfoCRUD(session).get_by_datetime(cominfo=request_cominfo_get)
 
     def test_get_multiline_fail_with_db_error(self):
@@ -335,7 +335,7 @@ class TestCominfoCRUD:
 
         request_cominfo_get = ComInfoGet(host_id=self.host_id)
 
-        with pytest.raises(exception.DatabaseGetErr):
+        with pytest.raises(crud_error.DatabaseGetErr):
             CominfoCRUD(session).get_multiline(cominfo=request_cominfo_get)
 
 
@@ -368,7 +368,7 @@ class TestCominfoRtCRUD:
         session.commit.side_effect = SQLAlchemyError()
 
         create_cominfort_data = ComInfoRTGet(host_id=self.host_id)
-        with pytest.raises(exception.DatabaseCreateErr):
+        with pytest.raises(crud_error.DatabaseCreateErr):
             CominfoRtCRUD(session).create(cominfo=create_cominfort_data)
 
     def test_get_success(self):
@@ -402,7 +402,7 @@ class TestCominfoRtCRUD:
         session.query.side_effect = SQLAlchemyError()
 
         request_cominfo_data = ComInfoRTGet(host_id=self.host_id)
-        with pytest.raises(exception.DatabaseGetErr):
+        with pytest.raises(crud_error.DatabaseGetErr):
             result = CominfoRtCRUD(session).get(request_cominfo_data)
 
     def test_update_success(self):
@@ -419,5 +419,5 @@ class TestCominfoRtCRUD:
         session.commit.side_effect = SQLAlchemyError()
 
         update_data = ComInfoRTGet(host_id=self.host_id)
-        with pytest.raises(exception.DatabaseUpdateErr):
+        with pytest.raises(crud_error.DatabaseUpdateErr):
             CominfoRtCRUD(session).update(update_data=update_data)

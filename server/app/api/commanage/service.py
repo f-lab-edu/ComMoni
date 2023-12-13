@@ -5,8 +5,7 @@ from app.api.commanage.crud import CommanageCRUD
 
 from app.api import user
 
-from app.api.exception import api_error
-from app.api.commanage import exception
+from app.api.exception import api_error, crud_error
 
 from app.configs.log import logger
 
@@ -28,7 +27,7 @@ class CommanageService:
         try:
             result = user.crud.UserCRUD(self.db).get(
                 user.schema.UserGet(user_id=commanage.user_id))
-        except user.exception.DatabaseGetErr:
+        except crud_error.DatabaseGetErr:
             logger.error(f"[CommanageService] UserCRUD get error")
             raise api_error.ServerError(f"[CommanageService] UserCRUD error")
 
@@ -38,7 +37,7 @@ class CommanageService:
 
         try:
             created_commanage = CommanageCRUD(self.db).create(commanage=commanage)
-        except exception.DatabaseCreateErr:
+        except crud_error.DatabaseCreateErr:
             logger.error(f"[CommanageService] CommanageCRUD create error")
             raise api_error.ServerError(f"[CommanageService] CommanageCRUD error")
 
@@ -52,7 +51,7 @@ class CommanageService:
         """
         try:
             result = CommanageCRUD(self.db).get(commanage=ComManageByHost(host_id=host_id))
-        except exception.DatabaseGetErr:
+        except crud_error.DatabaseGetErr:
             logger.error(f"[CommanageService] CommanageCRUD get error")
             raise api_error.ServerError(f"[CommanageService] CommanageCRUD error")
 
@@ -71,7 +70,7 @@ class CommanageService:
         try:
             commanage = ComManageByUser(user_id=user_id)
             return CommanageCRUD(self.db).get_all(commanage=commanage)
-        except exception.DatabaseGetErr:
+        except crud_error.DatabaseGetErr:
             logger.error(f"[CommanageService] CommanageCRUD get error")
             raise api_error.ServerError(f"[CommanageService] CommanageCRUD error")
 
@@ -83,7 +82,7 @@ class CommanageService:
         """
         try:
             result = CommanageCRUD(self.db).get(commanage=commanage)
-        except exception.DatabaseGetErr:
+        except crud_error.DatabaseGetErr:
             logger.error(f"[CommanageService] CommanageCRUD get error")
             raise api_error.ServerError(f"[CommanageService] CommanageCRUD error")
 
@@ -93,7 +92,7 @@ class CommanageService:
 
         try:
             CommanageCRUD(self.db).update(update_data=commanage)
-        except exception.DatabaseUpdateErr:
+        except crud_error.DatabaseUpdateErr:
             logger.error(f"[CommanageService] CommanageCRUD update error")
             raise api_error.ServerError(f"[CommanageService] CommanageCRUD error")
 
@@ -105,7 +104,7 @@ class CommanageService:
         """
         try:
             result = CommanageCRUD(self.db).get(commanage=ComManageByHost(host_id=host_id))
-        except exception.DatabaseGetErr:
+        except crud_error.DatabaseGetErr:
             logger.error(f"[CommanageService] CommanageCRUD get error")
             raise api_error.ServerError(f"[CommanageService] CommanageCRUD error")
 
@@ -115,6 +114,6 @@ class CommanageService:
 
         try:
             CommanageCRUD(self.db).delete(delete_data=ComManageByHost(host_id=host_id))
-        except exception.DatabaseDeleteErr:
+        except crud_error.DatabaseDeleteErr:
             logger.error(f"[CommanageService] CommanageCRUD update error")
             raise api_error.ServerError(f"[CommanageService] CommanageCRUD error")

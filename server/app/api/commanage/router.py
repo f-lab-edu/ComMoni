@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-
+from app.api.auth.service import verify_token
 from app.api.commanage.schema import ComManage, ComManageByUser, ComManageByHost, ComManageResponse
 from app.api.commanage.service import CommanageService
 
@@ -19,7 +19,8 @@ commanage_router = APIRouter(prefix=f"/{API_VERSION}/{API_NAME}")
 def create_commanage(
         *,
         db: Session = Depends(get_db),
-        commanage: ComManageByUser
+        commanage: ComManageByUser,
+        _: str = Depends(verify_token)
 ) -> ComManageResponse:
     """
     ComManage 생성
@@ -34,7 +35,8 @@ def create_commanage(
 def get_commanage(
         *,
         db: Session = Depends(get_db),
-        host_id: int
+        host_id: int,
+        _: str = Depends(verify_token)
 ) -> ComManage:
     """
     Host ID로 ComManage 가져오기
@@ -49,7 +51,8 @@ def get_commanage(
 def get_all_commanage(
         *,
         db: Session = Depends(get_db),
-        user_id: str
+        user_id: str,
+        _: str = Depends(verify_token)
 ) -> List[ComManage]:
     """
     User ID로 ComManage 가져오기
@@ -64,7 +67,8 @@ def get_all_commanage(
 def update_commanage(
         *,
         db: Session = Depends(get_db),
-        commanage: ComManageByHost
+        commanage: ComManageByHost,
+        _: str = Depends(verify_token)
 ) -> JSONResponse:
     """
     ComManage 객체 수정
@@ -80,7 +84,8 @@ def update_commanage(
 def delete_commanage(
         *,
         db: Session = Depends(get_db),
-        host_id: int
+        host_id: int,
+        _: str = Depends(verify_token)
 ) -> JSONResponse:
     """
     ComManage 삭제xs

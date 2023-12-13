@@ -8,7 +8,7 @@ from app.api.user.model import User
 from app.api.user.schema import UserCreate, UserGet
 from app.api.user.crud import UserCRUD
 
-from app.api.user import exception
+from app.api.exception import crud_error
 
 
 class TestUserCRUD:
@@ -32,7 +32,7 @@ class TestUserCRUD:
         session.commit.side_effect = SQLAlchemyError()
 
         create_user_data = UserCreate(user_id=self.user_id, user_pw=self.user_pw)
-        with pytest.raises(exception.DatabaseCreateErr):
+        with pytest.raises(crud_error.DatabaseCreateErr):
             UserCRUD(session).create(create_user_data)
 
     def test_update_success(self):
@@ -50,7 +50,7 @@ class TestUserCRUD:
 
         update_data = UserGet(user_id=self.user_id)
 
-        with pytest.raises(exception.DatabaseUpdateErr):
+        with pytest.raises(crud_error.DatabaseUpdateErr):
             UserCRUD(session).update(update_data=update_data)
 
     def test_delete_success(self):
@@ -67,7 +67,7 @@ class TestUserCRUD:
         session.commit.side_effect = SQLAlchemyError()
 
         delete_data = UserGet(user_id=self.user_id)
-        with pytest.raises(exception.DatabaseDeleteErr):
+        with pytest.raises(crud_error.DatabaseDeleteErr):
             UserCRUD(session).delete(user=delete_data)
 
     def test_get_success(self):
@@ -98,5 +98,5 @@ class TestUserCRUD:
 
         requset_user_get = UserGet(user_id=self.user_id)
 
-        with pytest.raises(exception.DatabaseGetErr):
+        with pytest.raises(crud_error.DatabaseGetErr):
             UserCRUD(session).get(requset_user_get)

@@ -4,7 +4,7 @@ import psutil
 import orjson
 
 
-class MonitoringData:
+class NormalData:
     """
     모니터링 데이터를 생성
     """

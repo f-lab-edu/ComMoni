@@ -7,8 +7,7 @@ from app.api.cominfo.service import CominfoService, CominfoRTService
 from app.api.cominfo.model import ComInfo, ComInfoRT
 from app.api.cominfo.schema import ComInfoGet, ComInfoCreate, ComInfoRTUpdate, ComInfoRTGet
 
-from app.api.cominfo import exception
-from app.api.exception import api_error
+from app.api.exception import crud_error, api_error
 
 
 class TestCominfoAPI:
@@ -65,7 +64,7 @@ class TestCominfoAPI:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.commanage.crud.CommanageCRUD.get', return_value=None) \
-            .side_effect = commanage.exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             CominfoService(db).create(cominfo=self.cominfo_create_schema)
@@ -87,7 +86,7 @@ class TestCominfoAPI:
         db = mocker.MagicMock()
         mocker.patch('app.api.commanage.crud.CommanageCRUD.get', return_value=self.commanage_model)
         mocker.patch('app.api.cominfo.crud.CominfoCRUD.create', return_value=None) \
-            .side_effect = exception.DatabaseCreateErr
+            .side_effect = crud_error.DatabaseCreateErr
 
         with pytest.raises(api_error.ServerError):
             CominfoService(db).create(cominfo=self.cominfo_create_schema)
@@ -158,7 +157,7 @@ class TestCominfoAPI:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.cominfo.crud.CominfoCRUD.get_by_datetime', return_value=None) \
-            .side_effect = exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             CominfoService(db).get(host_id=self.host_id, start_dt=self.start_dt)
@@ -169,7 +168,7 @@ class TestCominfoAPI:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.cominfo.crud.CominfoCRUD.get_by_datetime', return_value=None) \
-            .side_effect = exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             CominfoService(db).get(host_id=self.host_id, end_dt=self.end_et)
@@ -180,7 +179,7 @@ class TestCominfoAPI:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.cominfo.crud.CominfoCRUD.get_by_datetime', return_value=None) \
-            .side_effect = exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             CominfoService(db).get(host_id=self.host_id, start_dt=self.start_dt, end_dt=self.end_et)
@@ -221,7 +220,7 @@ class TestCominfoAPI:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.cominfo.crud.CominfoCRUD.get_multiline', return_value=None) \
-            .side_effect = exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             CominfoService(db).get(host_id=self.host_id, skip=self.skip)
@@ -232,7 +231,7 @@ class TestCominfoAPI:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.cominfo.crud.CominfoCRUD.get_multiline', return_value=None) \
-            .side_effect = exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             CominfoService(db).get(host_id=self.host_id, limit=self.limit)
@@ -243,7 +242,7 @@ class TestCominfoAPI:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.cominfo.crud.CominfoCRUD.get_multiline', return_value=None) \
-            .side_effect = exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             CominfoService(db).get(host_id=self.host_id, skip=self.skip, limit=self.limit)
@@ -336,7 +335,7 @@ class TestCominfoRtAPI:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.cominfo.crud.CominfoRtCRUD.get', return_value=None) \
-            .side_effect = exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             CominfoRTService(db).put(cominfo_rt=self.cominfort_get_schema)
@@ -347,7 +346,7 @@ class TestCominfoRtAPI:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.cominfo.crud.CominfoRtCRUD.get', return_value=None) \
-            .side_effect = exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             CominfoRTService(db).put(cominfo_rt=self.cominfort_update_schema)
@@ -359,7 +358,7 @@ class TestCominfoRtAPI:
         db = mocker.MagicMock()
         mocker.patch('app.api.cominfo.crud.CominfoRtCRUD.get', return_value=None)
         mocker.patch('app.api.cominfo.crud.CominfoRtCRUD.create', return_value=None) \
-            .side_effect = exception.DatabaseCreateErr
+            .side_effect = crud_error.DatabaseCreateErr
 
         with pytest.raises(api_error.ServerError):
             CominfoRTService(db).put(cominfo_rt=self.cominfort_get_schema)
@@ -371,7 +370,7 @@ class TestCominfoRtAPI:
         db = mocker.MagicMock()
         mocker.patch('app.api.cominfo.crud.CominfoRtCRUD.get', return_value=self.cominfort_model)
         mocker.patch('app.api.cominfo.crud.CominfoRtCRUD.update', return_value=None) \
-            .side_effect = exception.DatabaseUpdateErr
+            .side_effect = crud_error.DatabaseUpdateErr
 
         with pytest.raises(api_error.ServerError):
             CominfoRTService(db).put(cominfo_rt=self.cominfort_update_schema)
@@ -392,7 +391,7 @@ class TestCominfoRtAPI:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.cominfo.crud.CominfoRtCRUD.get', return_value=None) \
-            .side_effect = exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             CominfoRTService(db).get(host_id=self.host_id)

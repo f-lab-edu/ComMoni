@@ -7,7 +7,7 @@ from app.api.auth import service
 from app.api.auth.schema import Token
 from app.api.auth.token_util import JwtTokenType
 
-from app.api.exception import api_error
+from app.api.exception import api_error, crud_error
 from app.api.auth.exception import TokenInvalidateErr
 
 
@@ -42,7 +42,7 @@ class TestAuthService:
         """ authenticate 실패 db_error"""
         db = mocker.MagicMock()
         mocker.patch('app.api.user.crud.UserCRUD.get', return_value=None) \
-            .side_effect = user.exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             service.authenticate(user_id=self.user_id, user_pw=self.user_pw, db=db)

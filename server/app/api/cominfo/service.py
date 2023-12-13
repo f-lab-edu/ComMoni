@@ -10,8 +10,7 @@ from app.api.cominfo.crud import CominfoRtCRUD
 
 from app.api import commanage
 
-from app.api.exception import api_error
-from app.api.cominfo import exception
+from app.api.exception import api_error, crud_error
 
 from app.configs.log import logger
 
@@ -33,7 +32,7 @@ class CominfoService:
         try:
             result = commanage.crud.CommanageCRUD(self.db).get(
                 commanage=commanage.schema.ComManageByHost(host_id=cominfo.host_id))
-        except commanage.exception.DatabaseGetErr:
+        except crud_error.DatabaseGetErr:
             logger.error(f"[CominfoService] CommanageCRUD get error")
             raise api_error.ServerError(f"[CominfoService] CommanageCRUD error")
 
@@ -43,7 +42,7 @@ class CominfoService:
 
         try:
             created_cominfo = CominfoCRUD(self.db).create(cominfo=cominfo)
-        except exception.DatabaseCreateErr:
+        except crud_error.DatabaseCreateErr:
             logger.error(f"[CominfoService] CominfoCRUD create error")
             raise api_error.ServerError(f"[CominfoService] CommanageCRUD error")
 
@@ -71,7 +70,7 @@ class CominfoService:
             else:
                 cominfos = CominfoCRUD(self.db).get_multiline(
                     cominfo=ComInfoGet(host_id=host_id), skip=skip, limit=limit)
-        except exception.DatabaseGetErr:
+        except crud_error.DatabaseGetErr:
             logger.error(f"[CominfoService] CominfoCRUD get error")
             raise api_error.ServerError(f"[CominfoService] CominfoCRUD error")
 
@@ -99,20 +98,20 @@ class CominfoRTService:
         try:
             result = CominfoRtCRUD(self.db).get(
                 cominfo=ComInfoRTGet(host_id=cominfo_rt.host_id))
-        except exception.DatabaseGetErr:
+        except crud_error.DatabaseGetErr:
             logger.error(f"[CominfoRTService] CominfoRtCRUD get error")
             raise api_error.ServerError(f"[CominfoRTService] CominfoRtCRUD error")
 
         if not result:
             try:
                 CominfoRtCRUD(self.db).create(cominfo=cominfo_rt)
-            except exception.DatabaseCreateErr:
+            except crud_error.DatabaseCreateErr:
                 logger.error(f"[CominfoRTService] CominfoRtCRUD create error")
                 raise api_error.ServerError(f"[CominfoRTService] CominfoRtCRUD error")
         else:
             try:
                 CominfoRtCRUD(self.db).update(update_data=cominfo_rt)
-            except exception.DatabaseUpdateErr:
+            except crud_error.DatabaseUpdateErr:
                 logger.error(f"[CominfoRTService] CominfoRtCRUD update error")
                 raise api_error.ServerError(f"[CominfoRTService] CominfoRtCRUD error")
 
@@ -125,7 +124,7 @@ class CominfoRTService:
         try:
             result = CominfoRtCRUD(self.db).get(
                 cominfo=ComInfoRTGet(host_id=host_id))
-        except exception.DatabaseGetErr:
+        except crud_error.DatabaseGetErr:
             logger.error(f"[CominfoRTService] CominfoRtCRUD get error")
             raise api_error.ServerError(f"[CominfoRTService] CominfoRtCRUD error")
 

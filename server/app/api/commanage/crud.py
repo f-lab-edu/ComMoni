@@ -7,7 +7,7 @@ from app.api.commanage.model import ComManage
 
 from app.common import dictionary_util
 
-from app.api.commanage import exception
+from app.api.exception import crud_error
 
 from app.configs.log import logger
 
@@ -38,7 +38,7 @@ class CommanageCRUD:
         except SQLAlchemyError as err:
             logger.error(f"[ComManage]DB Error : {err}")
             self.session.rollback()
-            raise exception.DatabaseCreateErr()
+            raise crud_error.DatabaseCreateErr()
 
         return insert_data
 
@@ -55,7 +55,7 @@ class CommanageCRUD:
                 .first()
         except SQLAlchemyError as err:
             logger.error(f"[ComManage]DB Error : {err}")
-            raise exception.DatabaseGetErr()
+            raise crud_error.DatabaseGetErr()
 
     def get_all(self, commanage: ComManageByUser) -> List[ComManage]:
         """
@@ -70,7 +70,7 @@ class CommanageCRUD:
                 .all()
         except SQLAlchemyError as err:
             logger.error(f"[ComManage]DB Error : {err}")
-            raise exception.DatabaseGetErr()
+            raise crud_error.DatabaseGetErr()
 
     def update(self, update_data: ComManageByHost) -> None:
         """
@@ -89,7 +89,7 @@ class CommanageCRUD:
         except SQLAlchemyError as err:
             logger.error(f"[ComManage]DB Error : {err}")
             self.session.rollback()
-            raise exception.DatabaseUpdateErr()
+            raise crud_error.DatabaseUpdateErr()
 
         if updated == 0:
             logger.error("[ComManage]Update is none")
@@ -108,7 +108,7 @@ class CommanageCRUD:
         except SQLAlchemyError as err:
             logger.error(f"[ComManage]DB Error : {err}")
             self.session.rollback()
-            raise exception.DatabaseDeleteErr()
+            raise crud_error.DatabaseDeleteErr()
 
         if deleted == 0:
             logger.error("[ComManage]Delete is none")
@@ -127,7 +127,7 @@ class CommanageCRUD:
         except SQLAlchemyError as err:
             logger.error(f"[ComManage]DB Error : {err}")
             self.session.rollback()
-            raise exception.DatabaseDeleteErr()
+            raise crud_error.DatabaseDeleteErr()
 
         if deleted == 0:
             logger.error("[ComManage]Delete_all is none")

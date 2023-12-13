@@ -5,8 +5,7 @@ from app.api.user.service import UserService
 from app.api.user.model import User
 from app.api.user.schema import UserResponse, UserStatus, UserGet, UserCreate
 
-from app.api.user import exception
-from app.api.exception import api_error
+from app.api.exception import api_error, crud_error
 
 
 class TestUserService:
@@ -50,7 +49,7 @@ class TestUserService:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.user.crud.UserCRUD.get', return_value=None) \
-            .side_effect = exception.DatabaseGetErr()
+            .side_effect = crud_error.DatabaseGetErr()
 
         with pytest.raises(api_error.ServerError):
             UserService(db).create(user=self.user_create_schema)
@@ -72,7 +71,7 @@ class TestUserService:
         db = mocker.MagicMock()
         mocker.patch('app.api.user.crud.UserCRUD.get', return_value=None)
         mocker.patch('app.api.user.crud.UserCRUD.create', return_value=self.user_model) \
-            .side_effect = exception.DatabaseCreateErr
+            .side_effect = crud_error.DatabaseCreateErr
 
         with pytest.raises(api_error.ServerError):
             UserService(db).create(user=self.user_create_schema)
@@ -94,7 +93,7 @@ class TestUserService:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.user.crud.UserCRUD.get', return_value=None) \
-            .side_effect = exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             UserService(db).get(user_id=self.user_id)
@@ -126,7 +125,7 @@ class TestUserService:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.user.crud.UserCRUD.get', return_value=None) \
-            .side_effect = exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             UserService(db).get_status(user_id=self.user_id)
@@ -156,7 +155,7 @@ class TestUserService:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.user.crud.UserCRUD.get', return_value=None) \
-            .side_effect = exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             UserService(db).update(user=self.user_get_schema)
@@ -178,7 +177,7 @@ class TestUserService:
         db = mocker.MagicMock()
         mocker.patch('app.api.user.crud.UserCRUD.get', return_value=self.user_response_schema)
         mocker.patch('app.api.user.crud.UserCRUD.update', return_value=None) \
-            .side_effect = exception.DatabaseUpdateErr
+            .side_effect = crud_error.DatabaseUpdateErr
 
         with pytest.raises(api_error.ServerError):
             UserService(db).update(user=self.user_get_schema)
@@ -199,7 +198,7 @@ class TestUserService:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.user.crud.UserCRUD.get', return_value=None) \
-            .side_effect = exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             UserService(db).delete(user_id=self.user_id)
@@ -221,7 +220,7 @@ class TestUserService:
         db = mocker.MagicMock()
         mocker.patch('app.api.user.crud.UserCRUD.get', return_value=self.user_response_schema)
         mocker.patch('app.api.commanage.crud.CommanageCRUD.delete_all') \
-            .side_effect = commanage.exception.DatabaseDeleteErr
+            .side_effect = crud_error.DatabaseDeleteErr
 
         with pytest.raises(api_error.ServerError):
             UserService(db).delete(user_id=self.user_id)
@@ -234,7 +233,7 @@ class TestUserService:
         mocker.patch('app.api.user.crud.UserCRUD.get', return_value=self.user_response_schema)
         mocker.patch('app.api.commanage.crud.CommanageCRUD.delete_all')
         mocker.patch('app.api.user.crud.UserCRUD.delete') \
-            .side_effect = exception.DatabaseDeleteErr
+            .side_effect = crud_error.DatabaseDeleteErr
 
         with pytest.raises(api_error.ServerError):
             UserService(db).delete(user_id=self.user_id)

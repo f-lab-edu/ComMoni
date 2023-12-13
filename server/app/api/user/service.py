@@ -7,8 +7,7 @@ from app.api import commanage
 
 from app.common.passwd_util import get_password_hash
 
-from app.api.exception import api_error
-from app.api.user import exception
+from app.api.exception import api_error, crud_error
 
 from app.configs.log import logger
 
@@ -24,7 +23,7 @@ class UserService:
     def create(self, user: UserCreate):
         try:
             result = UserCRUD(self.db).get(user=UserGet(user_id=user.user_id))
-        except exception.DatabaseGetErr:
+        except crud_error.DatabaseGetErr:
             logger.error(f"[UserService] UserCRUD get error")
             raise api_error.ServerError(f"[UserService] UserCRUD error")
 
@@ -37,7 +36,7 @@ class UserService:
 
         try:
             created_user = UserCRUD(self.db).create(user=create_data)
-        except exception.DatabaseCreateErr:
+        except crud_error.DatabaseCreateErr:
             logger.error(f"[UserService] UserCRUD create error")
             raise api_error.ServerError(f"[UserService] UserCRUD error")
 
@@ -51,7 +50,7 @@ class UserService:
         """
         try:
             user = UserCRUD(self.db).get(UserGet(user_id=user_id))
-        except exception.DatabaseGetErr:
+        except crud_error.DatabaseGetErr:
             logger.error(f"[UserService] UserCRUD get error")
             raise api_error.ServerError(f"[UserService] UserCRUD error")
 
@@ -69,7 +68,7 @@ class UserService:
         """
         try:
             user = UserCRUD(self.db).get(UserGet(user_id=user_id))
-        except exception.DatabaseGetErr:
+        except crud_error.DatabaseGetErr:
             logger.error(f"[UserService] UserCRUD get error")
             raise api_error.ServerError(f"[UserService] UserCRUD error")
 
@@ -87,7 +86,7 @@ class UserService:
         """
         try:
             result = UserCRUD(self.db).get(user=user)
-        except exception.DatabaseGetErr:
+        except crud_error.DatabaseGetErr:
             logger.error(f"[UserService] user[{user.user_id}] is already existed")
             raise api_error.ServerError(f"[UserService] UserCRUD error")
 
@@ -97,7 +96,7 @@ class UserService:
 
         try:
             UserCRUD(self.db).update(update_data=user)
-        except exception.DatabaseUpdateErr:
+        except crud_error.DatabaseUpdateErr:
             logger.error(f"[UserService] UserCRUD update error")
             raise api_error.ServerError(f"[UserService] UserCRUD error")
 
@@ -109,7 +108,7 @@ class UserService:
         """
         try:
             result = UserCRUD(self.db).get(user=UserGet(user_id=user_id))
-        except exception.DatabaseGetErr:
+        except crud_error.DatabaseGetErr:
             logger.error(f"[UserService] UserCRUD get error")
             raise api_error.ServerError(f"[UserService] UserCRUD error")
 
@@ -120,12 +119,12 @@ class UserService:
             # User ID 에 해당하는 ComManage 전부 삭제 처리
             commanage.crud.CommanageCRUD(self.db).delete_all(
                 commanage=commanage.schema.ComManageByUser(user_id=user_id))
-        except commanage.exception.DatabaseDeleteErr:
+        except crud_error.DatabaseDeleteErr:
             logger.error(f"[UserService] CommanageCRUD delete_all error")
             raise api_error.ServerError(f"[UserService] CommanageCRUD error")
 
         try:
             UserCRUD(self.db).delete(user=UserGet(user_id=user_id))
-        except exception.DatabaseDeleteErr:
+        except crud_error.DatabaseDeleteErr:
             logger.error(f"[UserService] UserCRUD delete error")
             raise api_error.ServerError(f"[UserService] UserCRUD error")

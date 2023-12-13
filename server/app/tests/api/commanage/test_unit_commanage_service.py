@@ -5,8 +5,7 @@ from app.api.commanage.service import CommanageService
 from app.api.commanage.model import ComManage
 from app.api.commanage.schema import ComManageResponse, ComManageByHost, ComManageByUser
 
-from app.api.commanage import exception
-from app.api.exception import api_error
+from app.api.exception import crud_error, api_error
 
 
 class TestCommanageAPI:
@@ -71,7 +70,7 @@ class TestCommanageAPI:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.user.crud.UserCRUD.get', return_value=None) \
-            .side_effect = user.exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             CommanageService(db).create(commanage=self.commanage_by_user_schema)
@@ -93,7 +92,7 @@ class TestCommanageAPI:
         db = mocker.MagicMock()
         mocker.patch('app.api.user.crud.UserCRUD.get', return_value=self.user_model)
         mocker.patch('app.api.commanage.crud.CommanageCRUD.create', return_value=None) \
-            .side_effect = exception.DatabaseCreateErr
+            .side_effect = crud_error.DatabaseCreateErr
 
         with pytest.raises(api_error.ServerError):
             CommanageService(db).create(commanage=self.commanage_by_user_schema)
@@ -114,7 +113,7 @@ class TestCommanageAPI:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.commanage.crud.CommanageCRUD.get', return_value=None) \
-            .side_effect = exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             CommanageService(db).get(host_id=self.host_id)
@@ -135,7 +134,7 @@ class TestCommanageAPI:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.commanage.crud.CommanageCRUD.get_all', return_value=None) \
-            .side_effect = exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             CommanageService(db).get_all(user_id=self.user_id)
@@ -156,7 +155,7 @@ class TestCommanageAPI:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.commanage.crud.CommanageCRUD.get', return_value=None) \
-            .side_effect = exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             CommanageService(db).update(commanage=self.commanage_by_host_schema)
@@ -178,7 +177,7 @@ class TestCommanageAPI:
         db = mocker.MagicMock()
         mocker.patch('app.api.commanage.crud.CommanageCRUD.get', return_value=self.commanage_model)
         mocker.patch('app.api.commanage.crud.CommanageCRUD.update') \
-            .side_effect = exception.DatabaseUpdateErr
+            .side_effect = crud_error.DatabaseUpdateErr
 
         with pytest.raises(api_error.ServerError):
             CommanageService(db).update(commanage=self.commanage_by_host_schema)
@@ -199,7 +198,7 @@ class TestCommanageAPI:
         """
         db = mocker.MagicMock()
         mocker.patch('app.api.commanage.crud.CommanageCRUD.get', return_value=None) \
-            .side_effect = exception.DatabaseGetErr
+            .side_effect = crud_error.DatabaseGetErr
 
         with pytest.raises(api_error.ServerError):
             CommanageService(db).delete(host_id=self.host_id)
@@ -221,7 +220,7 @@ class TestCommanageAPI:
         db = mocker.MagicMock()
         mocker.patch('app.api.commanage.crud.CommanageCRUD.get', return_value=self.commanage_model)
         mocker.patch('app.api.commanage.crud.CommanageCRUD.delete') \
-            .side_effect = exception.DatabaseDeleteErr
+            .side_effect = crud_error.DatabaseDeleteErr
 
         with pytest.raises(api_error.ServerError):
             CommanageService(db).delete(host_id=self.host_id)

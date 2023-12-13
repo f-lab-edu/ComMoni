@@ -3,7 +3,7 @@ import asyncio
 from sig.setting import set_signal
 from schedule.scheduler import Scheduler
 from app.schedule.realtime_sender import send_reailtime_data
-from app.core.config import settings
+from app.configs.config import settings
 
 
 async def main():

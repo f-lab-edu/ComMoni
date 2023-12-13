@@ -2,9 +2,9 @@ import asyncio
 
 from aiohttp.client_exceptions import ClientConnectorError
 
-from app.core.config import settings
+from app.configs.config import settings
 from app.data.monitoring_data import MonitoringData
-from app.core.http_request import HttpRequest
+from app.common.core import HttpRequest
 
 
 async def send_reailtime_data():

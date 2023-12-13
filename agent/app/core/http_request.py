@@ -1,8 +1,6 @@
 from typing import Any
 import aiohttp
 
-from app.core.config import settings
-
 
 class HttpRequest:
     """

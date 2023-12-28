@@ -32,4 +32,4 @@ class Scheduler:
         :param args: 호출될 함수에 전달할 파라미터
         :return: None
         """
-        self.__scheduler.add_job(func=func, trigger="cron", second=second, args=args)
+        self.__scheduler.add_job(func=func, trigger="cron", second=second, args=args, misfire_grace_time=None)

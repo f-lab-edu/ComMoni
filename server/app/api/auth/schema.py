@@ -1,18 +1,19 @@
-from typing import Optional
 from pydantic import BaseModel
+
+from app.api.auth.token_util import JwtTokenType
 
 
 class Token(BaseModel):
     """
-    access token schema
+    token schema
     """
-    access_token: Optional[str] = None
-    refresh_token: Optional[str] = None
-    token_type: str = "bearer"
+    value: str
+    type: JwtTokenType
 
 
-class LoginRequestParam(BaseModel):
+class TokenSet(BaseModel):
     """
-    login에 필요한 정보
+    token set(access/refresh)
     """
-    host_id: int
+    access_token: str
+    refresh_token: str

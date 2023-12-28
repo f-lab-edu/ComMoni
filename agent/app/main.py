@@ -1,9 +1,12 @@
 import asyncio
 
 from sig.setting import set_signal
-from schedule.scheduler import Scheduler
+from app.auth.login_manager import login_api_server
 
-from app.token_manage.manager import token_manager
+from app.schedule.scheduler import Scheduler
+from app.schedule.monitoring import send_rt_monitoring, send_monitoring
+
+from app.configs.config import settings
 from app.configs.log import logger
 
 
@@ -12,19 +15,26 @@ async def main():
     set_signal(asyncio.get_running_loop())
     logger.info("[main] Run Commoni Agent...")
 
-    # agent_scheduler = Scheduler()
-    # agent_scheduler.add_cron_schedule(
-    #     func=send_reailtime_data,
-    #     second=f'*/{settings.REALTIME_SEND_INTERVAL}',
-    #     args=None)
+    await login_api_server()
+
+    agent_scheduler = Scheduler()
+    agent_scheduler.add_cron_schedule(
+        func=send_rt_monitoring,
+        second=f'*/{settings.REALTIME_INTERVAL}',
+        args=None)
+
+    agent_scheduler.add_cron_schedule(
+        func=send_monitoring,
+        second=f'*/{settings.NORMAL_INTERVAL}',
+        args=None)
 
     try:
         while True:
-            await asyncio.sleep(1000)
+            await asyncio.sleep(100)
     except asyncio.CancelledError:
         logger.error("[main] agent main catch Asyncio-CancelledError")
 
-    # agent_scheduler.shutdown()
+    agent_scheduler.shutdown()
 
 
 # agent run

@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     TOKEN_URL: str = "/api/v1/auth/login"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 20  # minute
-    REFRESH_TOKEN_EXPIRE_MINUTES: int = 15  # date
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 15  # date
     DATE_BEFORE_EXPIRATION: int = 2  # date
 
     # Redis

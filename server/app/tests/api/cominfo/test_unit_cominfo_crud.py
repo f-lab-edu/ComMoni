@@ -27,8 +27,7 @@ class TestCominfoCRUD:
             host_id=self.host_id,
             cpu_utilization=self.cpu_utilization,
             memory_utilization=self.memory_utilization,
-            disk_utilization=self.disk_utilization,
-            make_datetime=self.make_datetime
+            disk_utilization=self.disk_utilization
         )
 
         created_data = CominfoCRUD(session).create(create_cominfo_data)
@@ -36,7 +35,6 @@ class TestCominfoCRUD:
         assert created_data.cpu_utilization == self.cpu_utilization
         assert created_data.memory_utilization == self.memory_utilization
         assert created_data.disk_utilization == self.disk_utilization
-        assert created_data.make_datetime == self.make_datetime
 
     def test_create_fail_by_db_error(self):
         """데이터 생성 실패(DB 에러 발생)"""
@@ -380,9 +378,7 @@ class TestCominfoRtCRUD:
                  host_id=self.host_id,
                  cpu_utilization=self.cpu_utilization,
                  memory_utilization=self.memory_utilization,
-                 disk_utilization=self.disk_utilization,
-                 make_datetime=self.make_datetime,
-                 update_datetime=self.update_datetime
+                 disk_utilization=self.disk_utilization
              )])
         ])
 
@@ -393,8 +389,6 @@ class TestCominfoRtCRUD:
         assert result.cpu_utilization == self.cpu_utilization
         assert result.memory_utilization == self.memory_utilization
         assert result.disk_utilization == self.disk_utilization
-        assert result.make_datetime == self.make_datetime
-        assert result.update_datetime == self.update_datetime
 
     def test_get_fail_with_db_error(self):
         """데이터 가져오기 실패(DB error)"""

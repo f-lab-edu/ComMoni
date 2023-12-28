@@ -3,4 +3,5 @@ __all__ = [
     "crud",
     "model",
     "schema",
+    "service"
 ]

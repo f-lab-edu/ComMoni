@@ -32,7 +32,7 @@ class UserNotFound(ApiErrorBase):
 
     def __init__(self, user_id: str):
         super().__init__(http_status=status.HTTP_404_NOT_FOUND,
-                         message=f"{user_id} is not existed.")
+                         message=f"user[{user_id}] is not existed.")
 
 
 class AlreadyExistedUser(ApiErrorBase):
@@ -60,9 +60,9 @@ class Unauthorized(ApiErrorBase):
     UNAUTHORIZED에 대한 예외 처리 클래스
     """
 
-    def __init__(self):
+    def __init__(self, message: str):
         super().__init__(http_status=status.HTTP_401_UNAUTHORIZED,
-                         message="Unauthorized")
+                         message=f"Unauthorized : {message}")
 
 
 class CommanageNotFound(ApiErrorBase):
@@ -72,7 +72,7 @@ class CommanageNotFound(ApiErrorBase):
 
     def __init__(self, host_id: int):
         super().__init__(http_status=status.HTTP_404_NOT_FOUND,
-                         message=f"[ComManage{host_id}]  is not existed.")
+                         message=f"ComManage[{host_id}] is not existed.")
 
 
 class ServerError(ApiErrorBase):

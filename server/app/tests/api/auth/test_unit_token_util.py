@@ -1,133 +1,101 @@
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from jose import jwt, JWTError
-from app.api.auth.token_util import TokenUtil, JwtTokenType, JWTError
-from app.api.auth.exception import TokenInvalidateErr
+from app.api.auth.token_util import JwtToken, TokenUtil, JwtTokenType, JWTError, TokenInvalidateErr
 
 SECRET_KEY: str = "0548a115e749bd446115d6c05e95838b2f7b47568e110186e0fe81fca376e19d"
 ALGORITHM: str = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES: int = 20  # minute
-REFRESH_TOKEN_EXPIRE_MINUTES: int = 15  # date
+REFRESH_TOKEN_EXPIRE_DAYS: int = 15  # date
 
 
 class TestTokenUtil:
     user_id = "tester"
     host_id = 0
-    expire = datetime.utcnow()
 
-    def test_create_success_1(self):
-        """
-        token 생성 및 디코드 성공
-        """
-        token_util = TokenUtil(
-            user_id=self.user_id,
-            host_id=self.host_id,
-            expire=int(self.expire.timestamp())
-        )
-        token = token_util.create(JwtTokenType.ACCESS)
+    def test_create_jwt_token_1(self):
+        now = datetime.now(timezone.utc)
+        token = TokenUtil.create_access_token(user_id=self.user_id)
 
-        jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        assert token.get_type() is JwtTokenType.ACCESS
+        assert token.get_data("user_id") == self.user_id
+        assert token.get_data("") is None
 
-    def test_create_success_2(self):
-        """
-        token 생성 및 TokenUtil 객체 생성 성공
-        """
-        token_util = TokenUtil(
-            user_id=self.user_id,
-            host_id=self.host_id,
-            expire=self.expire
-        )
-        token = token_util.create(JwtTokenType.ACCESS)
+        compare_timestamp = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES - 1)
+        assert token.is_expired(compare_timestamp=compare_timestamp.timestamp()) is False
 
-        TokenUtil.from_token(token)
+        compare_timestamp = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES + 1)
+        assert token.is_expired(compare_timestamp=compare_timestamp.timestamp()) is True
 
-    def test_create_fail_1(self):
-        token_util = TokenUtil(
-            user_id=self.user_id,
-            host_id=self.host_id,
-            expire=int(self.expire.timestamp())
-        )
-        token = token_util.create(JwtTokenType.ACCESS)
+    def test_create_jwt_token_2(self):
+        now = datetime.now(timezone.utc)
+        token = TokenUtil.create_refresh_token(user_id=self.user_id)
 
-        token = token[:-1]
+        assert token.get_type() is JwtTokenType.REFRESH
+        assert token.get_data("user_id") == self.user_id
+        assert token.get_data("") is None
 
-        with pytest.raises(JWTError):
-            jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        compare_timestamp = now + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS - 1)
+        assert token.is_expired(compare_timestamp=compare_timestamp.timestamp()) is False
 
-    def test_create_fail_2(self):
-        token_util = TokenUtil(
-            user_id=self.user_id,
-            host_id=self.host_id,
-            expire=int(self.expire.timestamp())
-        )
-        token = token_util.create(JwtTokenType.ACCESS)
+        compare_timestamp = now + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS + 1)
+        assert token.is_expired(compare_timestamp=compare_timestamp.timestamp()) is True
 
-        token = token[:-1]
+    def test_create_jwt_token_3(self):
+        now = datetime.now(timezone.utc)
+        token = TokenUtil.create_agent_token(user_id=self.user_id,
+                                             host_id=self.host_id)
+
+        assert token.get_type() is JwtTokenType.AGENT
+        assert token.get_data("user_id") == self.user_id
+        assert token.get_data("host_id") == self.host_id
+        assert token.get_data("exp") is None
+        assert token.is_expired(None) is False
+
+    def test_create_jwt_token_4(self):
+        now = datetime.now(timezone.utc)
+        token = TokenUtil.create_refresh_token(user_id=self.user_id)
+
+        other_token = TokenUtil.create_from_token(token.token_string)
+
+        assert token.token_string == other_token.token_string
+
+    def test_create_jwt_token_5(self):
+        now = datetime.now(timezone.utc)
+        token = TokenUtil.create_refresh_token(user_id=self.user_id)
 
         with pytest.raises(TokenInvalidateErr):
-            TokenUtil.from_token(token)
+            TokenUtil.create_from_token(token.token_string[:-1])
 
-    def test_expire_check_success_1(self):
-        """
-        token 생성 및 TokenUtil 만료일자 체크
-        """
-        token_util = TokenUtil(
-            user_id=self.user_id,
-            host_id=self.host_id,
-            expire=int(self.expire.timestamp())
-        )
-        token = token_util.create(JwtTokenType.ACCESS)
+    def test_create_make_token_1(self):
+        token_info = {"data1": "data1", "data2": "data2"}
+        token1 = TokenUtil.make_token(JwtTokenType.ACCESS, token_info)
+        token2 = TokenUtil.make_token(JwtTokenType.ACCESS, token_info)
 
-        new_token_util = TokenUtil.from_token(token)
-        compare_time_delta = self.expire + timedelta(days=-2)
+        assert token1.token_string == token2.token_string
+        assert token1.get_type() == token2.get_type()
+        assert token1.get_data("data1") == token2.get_data("data1")
 
-        assert new_token_util.is_expired(compare_time_delta.timestamp()) == False
+        token1 = TokenUtil.make_token(JwtTokenType.REFRESH, token_info)
+        token2 = TokenUtil.make_token(JwtTokenType.REFRESH, token_info)
 
-    def test_expire_check_success_2(self):
-        """
-        token 생성 및 TokenUtil 만료일자 체크
-        """
-        token_util = TokenUtil(
-            user_id=self.user_id,
-            host_id=self.host_id,
-            expire=int(self.expire.timestamp())
-        )
-        token = token_util.create(JwtTokenType.ACCESS)
+        assert token1.token_string == token2.token_string
+        assert token1.get_type() == token2.get_type()
+        assert token1.get_data("data1") == token2.get_data("data1")
 
-        new_token_util = TokenUtil.from_token(token)
-        compare_time_delta = self.expire + timedelta(days=2)
+        token1 = TokenUtil.make_token(JwtTokenType.AGENT, token_info)
+        token2 = TokenUtil.make_token(JwtTokenType.AGENT, token_info)
 
-        assert new_token_util.is_expired(compare_time_delta.timestamp()) == True
+        assert token1.token_string == token2.token_string
+        assert token1.get_type() == token2.get_type()
+        assert token1.get_data("data1") == token2.get_data("data1")
 
-    def test_expire_check_success_3(self):
-        """
-        token 생성 및 TokenUtil 만료일자 체크
-        """
-        token_util = TokenUtil(
-            user_id=self.user_id,
-            host_id=self.host_id,
-            expire=int(self.expire.timestamp())
-        )
-        token = token_util.create(JwtTokenType.REFRESH)
+    def test_create_make_token_2(self):
+        token_info = {"data1": "data1", "data2": "data2"}
+        token1 = TokenUtil.make_token(JwtTokenType.ACCESS, token_info)
+        token2 = TokenUtil.make_token(JwtTokenType.REFRESH, token_info)
 
-        new_token_util = TokenUtil.from_token(token)
-        compare_time_delta = self.expire + timedelta(days=16)
-
-        assert new_token_util.is_expired(compare_time_delta.timestamp()) == True
-
-    def test_expire_check_success_4(self):
-        """
-        token 생성 및 TokenUtil 만료일자 체크
-        """
-        token_util = TokenUtil(
-            user_id=self.user_id,
-            host_id=self.host_id,
-            expire=int(self.expire.timestamp())
-        )
-        token = token_util.create(JwtTokenType.REFRESH)
-
-        new_token_util = TokenUtil.from_token(token)
-        compare_time_delta = self.expire + timedelta(days=13)
-
-        assert new_token_util.is_expired(compare_time_delta.timestamp()) == False
+        assert token1.token_string != token2.token_string
+        assert token1.get_type() != token2.get_type()
+        assert token1.get_data("data1") == token2.get_data("data1")

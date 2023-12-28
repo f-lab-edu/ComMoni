@@ -1,5 +1,4 @@
 from typing import Optional
-from datetime import datetime
 
 from pydantic import BaseModel
 
@@ -19,7 +18,6 @@ class ComInfoBase(BaseModel):
     cpu_utilization: Optional[float] = None
     memory_utilization: Optional[float] = None
     disk_utilization: Optional[float] = None
-    make_datetime: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -38,7 +36,6 @@ class ComInfoCreate(ComInfoBase):
     cpu_utilization: float
     memory_utilization: float
     disk_utilization: float
-    make_datetime: datetime
 
 
 class ComInfoRTBase(BaseModel):
@@ -57,8 +54,6 @@ class ComInfoRTBase(BaseModel):
     cpu_utilization: Optional[float] = None
     memory_utilization: Optional[float] = None
     disk_utilization: Optional[float] = None
-    make_datetime: Optional[datetime] = None
-    update_datetime: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -73,5 +68,3 @@ class ComInfoRTUpdate(ComInfoRTBase):
     cpu_utilization: float
     memory_utilization: float
     disk_utilization: float
-    make_datetime: datetime
-    update_datetime: datetime

@@ -180,3 +180,5 @@ pyrightconfig.json
 .logfile.log
 
 host_info.ini
+
+token.txt

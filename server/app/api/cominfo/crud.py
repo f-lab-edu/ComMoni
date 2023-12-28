@@ -99,7 +99,7 @@ class CominfoRtCRUD:
         :param cominfo: 생성하려는 ComInfoRT 객체
         :return: ComInfoRT
         """
-        insert_data = ComInfoRTGet(**dict(cominfo))
+        insert_data = ComInfoRT(**dict(cominfo))
         try:
             self.session.add(insert_data)
             self.session.commit()

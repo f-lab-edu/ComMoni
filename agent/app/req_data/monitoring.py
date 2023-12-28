@@ -4,7 +4,7 @@ import psutil
 import orjson
 
 
-class NormalData:
+class MonitoringData:
     """
     모니터링 데이터를 생성
     """
@@ -18,7 +18,6 @@ class NormalData:
         self.cpu_usage = psutil.cpu_percent(interval=1)
         self.memory_usage = psutil.virtual_memory().percent
         self.disk_usage = psutil.disk_usage('/').percent
-        self.maketime = str(datetime.now())
 
     def make(self) -> bytes:
         """
@@ -29,6 +28,5 @@ class NormalData:
             "host_id": self.host_id,
             "cpu_utilization": self.cpu_usage,
             "memory_utilization": self.memory_usage,
-            "disk_utilization": self.disk_usage,
-            "make_datetime": self.maketime
+            "disk_utilization": self.disk_usage
         })

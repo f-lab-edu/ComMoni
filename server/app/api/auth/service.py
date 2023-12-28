@@ -3,69 +3,95 @@ from datetime import datetime, timedelta
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from redis import Redis
-from redis.exceptions import RedisError
 
 from app.database import get_db
-from app.common.redis_util import get_redis
-from app.api import user, commanage
-from app.api.auth.schema import Token
-from app.api.auth.token_util import TokenUtil, JwtTokenType
-from app.common.passwd_util import verify_password
+from app.common.redis_util import get_redis, RedisUtil, RedisUtilError
 
-from app.api.auth.exception import TokenInvalidateErr
+from app.api import user, commanage
+from app.api.auth.schema import Token, TokenSet
+from app.api.auth.token_util import TokenUtil, JwtToken, JwtTokenType
+from app.common.passwd_util import PasswdUtil
+
 from app.api.exception import api_error, crud_error
+from app.api.auth.token_util import TokenInvalidateErr
 
 from app.configs.log import logger
 from app.configs.config import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=settings.TOKEN_URL)
 
-
-def authenticate(user_id: str, user_pw: str, db: Session) -> None:
-    """
-    아이디와 비밀번호로 인증
-    :param user_id: 사용자 아이디
-    :param user_pw: 사죶아 비밀번호
-    :param db: db session
-    :return: None
-    """
-    try:
-        get_user = user.crud.UserCRUD(db).get(
-            user.schema.UserGet(user_id=user_id)
-        )
-    except crud_error.DatabaseGetErr:
-        logger.error(f"[auth-service] UserCRUD get error")
-        raise api_error.ServerError(f"[auth-service] UserCRUD error")
-
-    if not get_user:
-        logger.error(f"[auth-service] user[{user_id} is not found")
-        raise api_error.UserNotFound(user_id=user_id)
-
-    if not verify_password(plain_password=user_pw, hashed_password=get_user.user_pw):
-        logger.error(f"[auth-service] user password is invalid")
-        raise api_error.Unauthorized()
-
-    if get_user.deleted:
-        logger.error(f"[auth-service] user[{user_id}] is deleted user")
-        raise api_error.Unauthorized()
-
-    logger.info(f"[auth-service] authenticate success. {user_id}")
+KEY_REFRESH = "refresh_token"
+KEY_AGENT = "agent_token"
+KEY_LOGOUT = "logout"
+KEY_USER_ID = "user_id"
+KEY_HOST_ID = "host_id"
 
 
-def create_token(db: Session, redis: Redis, user_id: str, host_id: int = 0) -> Token:
-    """
-    token 생성
-    :param db: db session
-    :param redis: redis session
-    :param user_id: 사용자 아이디
-    :param host_id: 호스트 아이디
-    :return: Token 스키마
-    """
-    if host_id != 0:
-        # host id 가 있을경우 commanage용 토큰 생성
+class AuthService:
+
+    def __init__(self, db: Session = None, redis: RedisUtil = None):
+        self.db = db
+        self.redis = redis
+
+    @staticmethod
+    def make_refresh_key_name(user_id: str) -> str:
+        """redis에서 사용할 refresh token key 이름 생성"""
+        return f"{user_id}.{KEY_REFRESH}"
+
+    @staticmethod
+    def make_agent_key_name(user_id: str, host_id: int) -> str:
+        """redis에서 사용할 agent token key 이름 생성"""
+        return f"{user_id}.{KEY_AGENT}.{host_id}"
+
+    @staticmethod
+    def make_logout_key_name(user_id: str) -> str:
+        """redis에서 사용할 logout acces token key 이름 생성"""
+        return f"{user_id}.{KEY_LOGOUT}"
+
+    def get_user(self, user_id: str) -> user.model.User:
+        """User 상태를 확인 후, 정상적인 User만 반환"""
         try:
-            result = commanage.crud.CommanageCRUD(db).get(
+            check_user = user.crud.UserCRUD(self.db).get(
+                user.schema.UserGet(user_id=user_id)
+            )
+        except crud_error.DatabaseGetErr:
+            logger.error(f"[auth-service] UserCRUD get error")
+            raise api_error.ServerError(f"[auth-service] UserCRUD error")
+
+        if not check_user:
+            logger.error(f"[auth-service] user[{user_id} is not found")
+            raise api_error.UserNotFound(user_id=user_id)
+
+        if check_user.deleted:
+            logger.error(f"[auth-service] user[{user_id}] is deleted user")
+            raise api_error.Unauthorized(message="already deleted user")
+
+        return check_user
+
+    def authenticate(self, user_id: str, user_pw: str):
+        """
+        로그인 정보로 사용자 인증
+        :param user_id: 사용자 아이디
+        :param user_pw: 사용자 비밀번호
+        :return: AuthService(self)
+        """
+        check_user = self.get_user(user_id=user_id)
+
+        if not PasswdUtil.verify(plain=user_pw, hashed=check_user.user_pw):
+            logger.error(f"[auth-service] user password is invalid")
+            raise api_error.Unauthorized("password is invalid")
+
+        logger.info(f"[auth-service] authenticate success. id : {user_id}")
+        return self
+
+    def authenticate_host(self, host_id: int) -> None:
+        """
+        host_id 인증
+        :param host_id: Commanage에 등록된 hoat_id
+        :return: None
+        """
+        try:
+            result = commanage.crud.CommanageCRUD(self.db).get(
                 commanage.schema.ComManageByHost(host_id=host_id)
             )
         except crud_error.DatabaseGetErr:
@@ -76,118 +102,153 @@ def create_token(db: Session, redis: Redis, user_id: str, host_id: int = 0) -> T
             logger.error(f"[auth-service] host[{host_id}] is not found")
             raise api_error.CommanageNotFound(host_id=host_id)
 
-    token_util = TokenUtil(user_id=user_id, host_id=host_id)
-    access_token = token_util.create(token_type=JwtTokenType.ACCESS)
-    refresh_token = token_util.create(token_type=JwtTokenType.REFRESH)
+    def create_access_token(self, user_id: str) -> Token:
+        """access token 생성"""
+        access_token = TokenUtil.create_access_token(user_id=user_id)
+        return Token(value=access_token.token_string, type=JwtTokenType.ACCESS)
 
-    # refresh 저장
-    try:
-        redis.set(name=user_id, value=refresh_token)
-    except RedisError as err:
-        logger.error(f"[auth-service] redis error : {err}")
-        raise api_error.ServerError(f"[auth-service] redis error")
-
-    return Token(access_token=access_token, refresh_token=refresh_token)
-
-
-def renew_token(token: str, redis: Redis) -> Token:
-    """
-    token 갱신
-    :param token: 토큰(리프레시 토큰)
-    :param redis: redis session
-    :return: Token 스키마
-    """
-    try:
-        token_util = TokenUtil.from_token(token)
-    except TokenInvalidateErr as err:
-        logger.error(f"[auth-service] TokenUtil error : {err}")
-        raise api_error.Unauthorized()
-
-    if token_util.token_type != JwtTokenType.REFRESH:
-        logger.error(f"[auth-service] current Token is not Refresh-token")
-        raise api_error.Unauthorized()
-
-    # refresh token 만료전 체크일자
-    compare_timedelta = (datetime.utcnow() + timedelta(days=settings.DATE_BEFORE_EXPIRATION)).timestamp()
-    if token_util.is_expired(compare_timedelta):
-        logger.info("[auth-service] refresh token's expiration date is approaching. Renew the token")
-        refresh_token = token_util.create(token_type=JwtTokenType.REFRESH)
+    def create_refresh_token(self, user_id: str) -> Token:
+        """refresh token 생성"""
+        refresh_token = TokenUtil.create_refresh_token(user_id=user_id)
 
         try:
-            redis.set(name=token_util.user_id, value=refresh_token)
-        except RedisError as err:
+            key = self.make_refresh_key_name(user_id=user_id)
+            self.redis.set(key=key, value=refresh_token.token_string)
+        except RedisUtilError as err:
             logger.error(f"[auth-service] redis error : {err}")
             raise api_error.ServerError(f"[auth-service] redis error")
-    else:
+
+        return Token(value=refresh_token.token_string, type=JwtTokenType.REFRESH)
+
+    def create_agent_token(self, user_id: str, host_id: int) -> Token:
+        """agent token 생성"""
+        agent_token = TokenUtil.create_agent_token(user_id=user_id, host_id=host_id)
+
+        try:
+            key = self.make_agent_key_name(user_id=user_id, host_id=host_id)
+            self.redis.set(key=key, value=agent_token.token_string)
+        except RedisUtilError as err:
+            logger.error(f"[auth-service] redis error : {err}")
+            raise api_error.ServerError(f"[auth-service] redis error")
+
+        return Token(value=agent_token.token_string, type=JwtTokenType.AGENT)
+
+    def create_token_set(self, user_id: str, temp_login: bool = False) -> TokenSet:
+        """access/refresh token을 같이 생성"""
+        access_token = self.create_access_token(user_id=user_id)
+        if not temp_login:
+            refresh_token = self.create_refresh_token(user_id=user_id)
+            return TokenSet(access_token=access_token.value, refresh_token=refresh_token.value)
+
+        return TokenSet(access_token=access_token.value, refresh_token="")
+
+    def renew_token(self, token: JwtToken) -> TokenSet:
+        """토큰 갱신"""
+        if token.get_type() != JwtTokenType.REFRESH:
+            raise api_error.Unauthorized("not support token type")
+
+        user_id = token.get_data(KEY_USER_ID)
         refresh_token = None
+        compare_datetime = datetime.utcnow() + timedelta(days=settings.DATE_BEFORE_EXPIRATION)
 
-    access_token = token_util.create(token_type=JwtTokenType.ACCESS)
-    return Token(access_token=access_token, refresh_token=refresh_token)
+        if token.is_expired(int(compare_datetime.timestamp())):
+            logger.info("[auth-service] refresh token's expiration date is approaching. Renew the token")
+            refresh_token = self.create_refresh_token(user_id=user_id)
+
+        access_token = self.create_access_token(user_id=user_id)
+        if refresh_token is None:
+            return TokenSet(access_token=access_token.value, refresh_token="")
+
+        return TokenSet(access_token=access_token.value, refresh_token=refresh_token.value)
+
+    def remove_token(self, token: JwtToken) -> None:
+        """토큰 삭제"""
+        if token.get_type() != JwtTokenType.ACCESS:
+            raise api_error.Unauthorized("not support token type")
+
+        user_id = token.get_data(KEY_USER_ID)
+        expire_minutes = 60 * settings.ACCESS_TOKEN_EXPIRE_MINUTES
+
+        try:
+            delete_key = self.make_refresh_key_name(user_id=user_id)
+            self.redis.delete(delete_key)
+            self.redis.set_with_expire(
+                key=self.make_logout_key_name(user_id=user_id),
+                value=token.get_token(),
+                expire_minutes=expire_minutes
+            )
+        except RedisUtilError as err:
+            logger.error(f"[auth-service] redis error : {err}")
+            raise api_error.ServerError(f"[auth-service] redis error")
+
+    def verify_access_token(self, token: JwtToken):
+        """access token 인증"""
+        if token.get_type() != JwtTokenType.ACCESS:
+            raise api_error.Unauthorized("not support token type")
+
+        user_id = token.get_data(KEY_USER_ID)
+        self.get_user(user_id=user_id)
+
+    def verify_refresh_token(self, token: JwtToken):
+        """refresh token 인증"""
+        if token.get_type() != JwtTokenType.REFRESH:
+            raise api_error.Unauthorized("not support token type")
+
+        user_id = token.get_data(KEY_USER_ID)
+        self.get_user(user_id=user_id)
+
+        try:
+            key = self.make_refresh_key_name(user_id=user_id)
+            result = self.redis.get(key=key)
+        except RedisUtilError as err:
+            logger.error(f"[auth-service] redis error : {err}")
+            raise api_error.ServerError(f"[auth-service] redis error")
+
+        if result is None:
+            raise api_error.Unauthorized("Not a registered token")
+
+    def verify_agent_token(self, token: JwtToken):
+        """agent token 인증"""
+        if token.get_type() != JwtTokenType.AGENT:
+            raise api_error.Unauthorized("not support token type")
+
+        host_id = int(token.get_data(key=KEY_HOST_ID))
+        self.authenticate_host(host_id=host_id)
+
+        user_id = token.get_data(key=KEY_USER_ID)
+        key = self.make_agent_key_name(user_id=user_id, host_id=host_id)
+
+        try:
+            result = self.redis.get(key=key)
+        except RedisUtilError as err:
+            logger.error(f"[auth-service] redis error : {err}")
+            raise api_error.ServerError(f"[auth-service] redis error")
+
+        if result is None:
+            raise api_error.Unauthorized("Not a registered token")
 
 
-def remove_token(token: str, redis: Redis) -> None:
-    """
-    token 제거
-    :param token: 제거할 토큰
-    :param redis: redis session
-    :return: None
-    """
+def get_auth_service(db: Session = Depends(get_db),
+                     redis: RedisUtil = Depends(get_redis)):
+    """auth service 의존성"""
+    yield AuthService(db=db, redis=redis)
+
+
+def get_jwt_token(token: str = Depends(oauth2_scheme)):
+    """JwtToken 의존성"""
     try:
-        token_util = TokenUtil.from_token(token)
+        yield TokenUtil.create_from_token(token)
     except TokenInvalidateErr as err:
-        logger.error(f"[auth-service] TokenUtil error : {err}")
-        raise api_error.Unauthorized()
-
-    expire_time = 60 * settings.ACCESS_TOKEN_EXPIRE_MINUTES
-
-    try:
-        redis.delete(token_util.user_id)
-        redis.setex(name=f"{token_util.user_id}_logout",
-                    value=token,
-                    time=expire_time)
-    except RedisError as err:
-        logger.error(f"[auth-service] redis error : {err}")
-        raise api_error.ServerError(f"[auth-service] redis error")
+        raise api_error.Unauthorized(message=str(err))
 
 
-def verify_token(db: Session = Depends(get_db),
-                 redis: Redis = Depends(get_redis),
-                 token: str = Depends(oauth2_scheme)):
-    """
-    token 인증
-    :param db: db session
-    :param redis: redis session
-    :param token: 인증할 token
-    :return:
-    """
-    try:
-        token_util = TokenUtil.from_token(token)
-    except TokenInvalidateErr as err:
-        logger.error(f"[auth-service] TokenUtil error : {err}")
-        raise api_error.Unauthorized()
+def verify_agent_token(token: JwtToken = Depends(get_jwt_token),
+                       auth_service: AuthService = Depends(get_auth_service)):
+    """agent token 인증 의존성"""
+    auth_service.verify_agent_token(token)
 
-    try:
-        get_user = user.crud.UserCRUD(db).get(
-            user.schema.UserGet(user_id=token_util.user_id)
-        )
-    except crud_error.DatabaseGetErr:
-        logger.error(f"[auth-service] UserCRUD get error")
-        raise api_error.ServerError(f"[auth-service] UserCRUD error")
 
-    if not get_user:
-        logger.error(f"[auth-service] user[{token_util.user_id} is not found")
-        raise api_error.UserNotFound(user_id=token_util.user_id)
-
-    if get_user.deleted:
-        logger.error(f"[auth-service] user[{token_util.user_id} is deleted user")
-        raise api_error.Unauthorized()
-
-    try:
-        if redis.get(f"{token_util.user_id}_logout"):
-            logger.error(f"[auth-service] user[{token_util.user_id} is logout user")
-            raise api_error.Unauthorized()
-    except RedisError as err:
-        logger.error(f"[auth-service] redis error : {err}")
-        raise api_error.ServerError(f"[auth-service] redis error")
-
-    return token
+def verify_access_token(token: JwtToken = Depends(get_jwt_token),
+                        auth_service: AuthService = Depends(get_auth_service)):
+    """access token 인증 의존성"""
+    auth_service.verify_access_token(token)

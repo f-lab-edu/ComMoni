@@ -2,7 +2,6 @@ from enum import Enum
 from datetime import datetime, timedelta
 
 from jose import jwt, JWTError
-from app.api.auth import exception
 
 from app.configs.config import settings
 
@@ -13,64 +12,146 @@ class JwtTokenType(Enum):
     """
     ACCESS = "ACCESS"
     REFRESH = "REFRESH"
+    AGENT = "AGENT"
 
     def __str__(self):
+        """token 스트링 변환 매직메서드"""
         return str(self.value)
 
 
-class TokenUtil:
-    """
-    token 관련 유틸 클래스
-    """
+class TokenInvalidateErr(Exception):
+    pass
 
-    def __init__(self, user_id: str, host_id: int, token_type: JwtTokenType = None, expire: int = 0):
-        self.user_id = user_id
-        self.host_id = host_id
-        self.expire = expire
-        self.token_type = token_type
 
-    def create(self, token_type: JwtTokenType) -> str:
+class JwtToken:
+    """JWT 토큰 클래스"""
+
+    def __init__(self, token: str):
+        """토큰 생성자"""
+        try:
+            self.payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        except JWTError as err:
+            raise TokenInvalidateErr(err)
+
+        self.token_string = token
+
+    def is_expired(self, compare_timestamp: int) -> bool:
         """
-        token 생성
-        :param token_type: 토큰 타입
+        토큰의 만료일자를 파라미터와 비교하여 만료상태 확인
+        Agent Token은 만료일자가 없음으로 항상 False 반환
+        :param compare_timestamp: 비교할 기준 시간(datetime의 timestamp값)
+        :return: bool
+        """
+        if self.get_type() == JwtTokenType.AGENT:
+            return False
+
+        expire = int(self.payload['exp'])
+        return expire < compare_timestamp
+
+    def get_token(self) -> str:
+        """
+        토큰 원본 반환
         :return: str
         """
-        if token_type == JwtTokenType.ACCESS:
-            add_expire_timedelta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        else:
-            add_expire_timedelta = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_MINUTES)
+        return self.token_string
 
-        self.expire = datetime.utcnow() + add_expire_timedelta
-        to_encode = {
-            "exp": self.expire,
-            "user_id": str(self.user_id),
-            "host_id": self.host_id,
-            "type": str(token_type),
-        }
-        encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-        return encoded_jwt
+    def get_type(self) -> JwtTokenType:
+        """
+        토큰 타입 확인
+        :return: JwtTokenType
+        """
+        return JwtTokenType(self.payload['type'])
 
-    def is_expired(self, compare_timestamp: int):
-        return self.expire < compare_timestamp
+    def get_data(self, key: str) -> str:
+        """
+        토큰의 만료일자를 제외한 데이터 가져오기.
+        :param key: 찾으려는 데이터 키
+        :return: str
+        """
+        return self.payload.get(key)
+
+
+class TokenUtil:
+    @classmethod
+    def create_from_token(cls, token: str):
+        """
+        토큰에서 JwtToken객체 생성
+        :param token: 문자열로 된 토큰
+        :return: JwtToken
+        """
+        return JwtToken(token)
 
     @classmethod
-    def from_token(cls, token: str):
+    def create_access_token(cls, user_id: str):
         """
-        token에서 TokenUtil 클래스 생성 클래스 메서드
-        :param token: 변환하려는 token
-        :return: TokenUtil
+        Access Type의 토큰 생성
+        :param user_id: 사용자 아이디
+        :return: JwtToken
         """
+        return cls.make_token(
+            token_type=JwtTokenType.ACCESS,
+            token_info={"user_id": user_id}
+        )
+
+    @classmethod
+    def create_refresh_token(cls, user_id: str):
+        """
+        Refresh Type의 토큰 생성
+        :param user_id: 사용자 아이디
+        :return: JwtToken
+        """
+        return cls.make_token(
+            token_type=JwtTokenType.REFRESH,
+            token_info={"user_id": user_id}
+        )
+
+    @classmethod
+    def create_agent_token(cls, user_id: str, host_id: int):
+        """
+        Agent Type의 토큰 생성
+        :param user_id: 사용자 아이디
+        :param host_id: 호스트 아이디(commanage)
+        :return: JwtToken
+        """
+        return cls.make_token(
+            token_type=JwtTokenType.AGENT,
+            token_info={"user_id": user_id, "host_id": host_id}
+        )
+
+    @classmethod
+    def make_token(cls, token_type: JwtTokenType, token_info: dict):
+        """
+        토큰 생성
+        :param token_type: 생성할 토큰 타입
+        :param token_info: 토큰에 추가할 데이터
+        :return: JwtToken
+        """
+        expire = cls.make_expire(token_type)
+        to_encode = {**expire, **token_info}
+
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-            user_id = payload.get("user_id")
-            host_id = payload.get("host_id")
-            expire = payload.get("exp")
-
-            if payload.get("type") == str(JwtTokenType.ACCESS):
-                token_type = JwtTokenType.ACCESS
-            else:
-                token_type = JwtTokenType.REFRESH
-
-            return cls(user_id=user_id, host_id=host_id, expire=expire, token_type=token_type)
+            token = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
         except JWTError as err:
-            raise exception.TokenInvalidateErr(err)
+            raise TokenInvalidateErr(err)
+
+        return JwtToken(token)
+
+    @classmethod
+    def make_expire(cls, token_type: JwtTokenType):
+        """
+        토큰의 type을 기준으로 만료일자 생성
+        :param token_type: 토큰 타입
+        :return: dict
+        """
+        if token_type == JwtTokenType.ACCESS:
+            return {
+                'exp': datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+                "type": str(JwtTokenType.ACCESS)
+            }
+        elif token_type == JwtTokenType.REFRESH:
+            return {
+                'exp': datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
+                "type": str(JwtTokenType.REFRESH)
+            }
+        else:
+            return {"type": str(JwtTokenType.AGENT)}

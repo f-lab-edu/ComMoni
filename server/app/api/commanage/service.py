@@ -1,13 +1,20 @@
 from sqlalchemy.orm import Session
+from fastapi import Depends
 
 from app.api.commanage.schema import ComManageByUser, ComManageByHost, ComManageResponse
 from app.api.commanage.crud import CommanageCRUD
+
+from app.database import get_db
 
 from app.api import user
 
 from app.api.exception import api_error, crud_error
 
 from app.configs.log import logger
+
+
+def get_commanage_service(db: Session = Depends(get_db)):
+    yield CommanageService(db)
 
 
 class CommanageService:

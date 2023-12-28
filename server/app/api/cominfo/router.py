@@ -6,10 +6,11 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.api.auth.service import verify_token
 from app.api.cominfo.schema import ComInfoCreate, ComInfo, ComInfoGet
 from app.api.cominfo.schema import ComInfoRTGet
 from app.api.cominfo.service import CominfoService, CominfoRTService
+
+from app.api.auth.service import verify_agent_token, verify_access_token
 
 API_VERSION = "v1"
 API_NAME = "cominfo"
@@ -22,7 +23,7 @@ def create_cominfo(
         *,
         db: Session = Depends(get_db),
         cominfo: ComInfoCreate,
-        _: str = Depends(verify_token)
+        _=Depends(verify_agent_token)
 ) -> ComInfoGet:
     """
     ComInfo 객체 추가
@@ -42,7 +43,7 @@ def get_cominfos(
         limit: int = 50,
         start_dt: Optional[datetime] = None,
         end_dt: Optional[datetime] = None,
-        _: str = Depends(verify_token)
+        _=Depends(verify_access_token)
 ) -> List[ComInfo]:
     """
     ComInfo 값 가져오기
@@ -66,7 +67,7 @@ def put_cominfo_realtime(
         *,
         db: Session = Depends(get_db),
         cominfo: ComInfoRTGet,
-        _: str = Depends(verify_token)
+        _=Depends(verify_agent_token)
 ) -> JSONResponse:
     """
     CominfoRT(Real-Time) 값 추가 또는 수정
@@ -83,7 +84,7 @@ def get_cominfo_realtime(
         *,
         db: Session = Depends(get_db),
         host_id: int,
-        token: str = Depends(verify_token)
+        _=Depends(verify_access_token)
 ) -> ComInfoRTGet:
     """
     CominfoRT(Real-Time) 값 가져오기

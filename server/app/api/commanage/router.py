@@ -5,9 +5,10 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.api.auth.service import verify_token
-from app.api.commanage.schema import ComManage, ComManageByUser, ComManageByHost, ComManageResponse
+from app.api.commanage.schema import ComManage, ComManageByHost
 from app.api.commanage.service import CommanageService
+
+from app.api.auth.service import verify_access_token
 
 API_VERSION = "v1"
 API_NAME = "commanage"
@@ -15,28 +16,12 @@ API_NAME = "commanage"
 commanage_router = APIRouter(prefix=f"/{API_VERSION}/{API_NAME}")
 
 
-@commanage_router.post("/", status_code=status.HTTP_201_CREATED)
-def create_commanage(
-        *,
-        db: Session = Depends(get_db),
-        commanage: ComManageByUser,
-        _: str = Depends(verify_token)
-) -> ComManageResponse:
-    """
-    ComManage 생성
-    :param db: db Session
-    :param commanage: 추가하려는 ComManage 객체
-    :return: ComManageResponse
-    """
-    return CommanageService(db=db).create(commanage=commanage)
-
-
 @commanage_router.get("/{host_id}", status_code=status.HTTP_200_OK, response_model=ComManage)
 def get_commanage(
         *,
         db: Session = Depends(get_db),
         host_id: int,
-        _: str = Depends(verify_token)
+        _=Depends(verify_access_token)
 ) -> ComManage:
     """
     Host ID로 ComManage 가져오기
@@ -52,7 +37,7 @@ def get_all_commanage(
         *,
         db: Session = Depends(get_db),
         user_id: str,
-        _: str = Depends(verify_token)
+        _=Depends(verify_access_token)
 ) -> List[ComManage]:
     """
     User ID로 ComManage 가져오기
@@ -68,7 +53,7 @@ def update_commanage(
         *,
         db: Session = Depends(get_db),
         commanage: ComManageByHost,
-        _: str = Depends(verify_token)
+        _=Depends(verify_access_token)
 ) -> JSONResponse:
     """
     ComManage 객체 수정
@@ -85,7 +70,7 @@ def delete_commanage(
         *,
         db: Session = Depends(get_db),
         host_id: int,
-        _: str = Depends(verify_token)
+        _=Depends(verify_access_token)
 ) -> JSONResponse:
     """
     ComManage 삭제xs

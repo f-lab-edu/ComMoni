@@ -5,7 +5,7 @@ from app.api.user.schema import UserCreate, UserGet, UserStatus, UserResponse
 
 from app.api import commanage
 
-from app.common.passwd_util import get_password_hash
+from app.common.passwd_util import PasswdUtil
 
 from app.api.exception import api_error, crud_error
 
@@ -32,7 +32,7 @@ class UserService:
             raise api_error.AlreadyExistedUser(user_id=user.user_id)
 
         create_data = user
-        create_data.user_pw = get_password_hash(password=user.user_pw)
+        create_data.user_pw = PasswdUtil.get_hash(password=user.user_pw)
 
         try:
             created_user = UserCRUD(self.db).create(user=create_data)

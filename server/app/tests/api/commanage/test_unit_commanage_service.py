@@ -52,51 +52,6 @@ class TestCommanageAPI:
     commanage_by_host_schema = ComManageByHost(host_id=host_id)
     commanage_response_schema = ComManageResponse(host_id=host_id)
 
-    def test_create_success(self, mocker):
-        """
-        Commaange 생성 테스트 성공
-        """
-        db = mocker.MagicMock()
-        mocker.patch('app.api.user.crud.UserCRUD.get', return_value=self.user_model)
-        mocker.patch('app.api.commanage.crud.CommanageCRUD.create', return_value=self.commanage_model)
-
-        result = CommanageService(db).create(commanage=self.commanage_by_user_schema)
-
-        assert result == self.commanage_response_schema
-
-    def test_create_fail_1(self, mocker):
-        """
-        Commanage 생성 테스트 실패. User DB get error 발생
-        """
-        db = mocker.MagicMock()
-        mocker.patch('app.api.user.crud.UserCRUD.get', return_value=None) \
-            .side_effect = crud_error.DatabaseGetErr
-
-        with pytest.raises(api_error.ServerError):
-            CommanageService(db).create(commanage=self.commanage_by_user_schema)
-
-    def test_create_fail_2(self, mocker):
-        """
-        Commanage 생성 테스트 실패. User 가 없는 경우
-        """
-        db = mocker.MagicMock()
-        mocker.patch('app.api.user.crud.UserCRUD.get', return_value=None)
-
-        with pytest.raises(api_error.UserNotFound):
-            CommanageService(db).create(commanage=self.commanage_by_user_schema)
-
-    def test_create_fail_3(self, mocker):
-        """
-        Commaange 생성 실패, DB create error 발생
-        """
-        db = mocker.MagicMock()
-        mocker.patch('app.api.user.crud.UserCRUD.get', return_value=self.user_model)
-        mocker.patch('app.api.commanage.crud.CommanageCRUD.create', return_value=None) \
-            .side_effect = crud_error.DatabaseCreateErr
-
-        with pytest.raises(api_error.ServerError):
-            CommanageService(db).create(commanage=self.commanage_by_user_schema)
-
     def test_get_success(self, mocker):
         """
         host_id로 Commaange 가져오기 성공

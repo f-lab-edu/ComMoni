@@ -21,7 +21,7 @@ class ComInfo(Base):
     cpu_utilization = Column(Float)
     memory_utilization = Column(Float)
     disk_utilization = Column(Float)
-    make_datetime = Column(DateTime)
+    make_datetime = Column(DateTime, server_default=func.now())
 
 
 class ComInfoRT(Base):
